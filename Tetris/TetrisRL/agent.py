@@ -5,6 +5,7 @@ import numpy as np
 import random
 
 
+
 class Agent:
     """
     The Deep Q-learning agent.

@@ -1,60 +1,103 @@
 import torch
-from torchvision import datasets, models, transforms
+import torchvision
+from torchvision import models, transforms
+import torch.nn as nn
+import torch.optim as optim
 
-# Vérifiez si CUDA est disponible et définissez la variable device en conséquence
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Define the transformation for the transfert learning
+transform = transforms.Compose([
+    transforms.Resize(224),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
 
-# Chargez le modèle pré-entraîné ResNet50
-model = models.resnet50(pretrained=True)
+# Load the resnet50 model pretrained on ImageNet
+net = models.resnet50(pretrained=True)
 
-# Geler tous les paramètres du modèle
-for param in model.parameters():
+# Freezing all the parameters of the model
+for param in net.parameters():
     param.requires_grad = False
 
-# Remplacer la dernière couche pour correspondre au nombre de classes dans le nouveau jeu de données
-num_ftrs = model.fc.in_features
-model.fc = torch.nn.Linear(num_ftrs, 2)  # 2 classes: chiens et chats
+# Replace the last layer to match the number of classes in the new dataset
+num_ftrs = net.fc.in_features
+net.fc = nn.Linear(num_ftrs, 2)  # 2 classes: dogs and cats
 
-model = model.to(device)
+# Check if CUDA is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+net = net.to(device)
 
-# Définir la fonction de perte et l'optimiseur
-criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.fc.parameters(), lr=0.001, momentum=0.9)
+# Define the loss function and optimizer
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(net.fc.parameters(), lr=0.001, momentum=0.9)
 
-# Normaliser les images de chiens et de chats pour correspondre aux images sur lesquelles ResNet a été formé
-data_transforms = {
-    'train': transforms.Compose([
-        transforms.RandomResizedCrop(224),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-    'val': transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-}
+#Ajout du scheduler ??#
 
-# Charger les images de chiens et de chats
-image_datasets = {x: datasets.ImageFolder('/mnt/c/Users/theod/OneDrive/Documents/ULB/Ma0/Q2/INFO-H-410_TechniquesOfArtificialIntelligence/Projet/dogs-vs-cats/'+x, data_transforms[x]) for x in ['train', 'val']}
+batch_size = 10
+data_dir = '/mnt/c/Users/theod/OneDrive/Documents/ULB/Ma0/Q2/INFO-H-410_TechniquesOfArtificialIntelligence/Projet_IA/dogs-vs-cats'
 
-# Définir l'ensemble de données de test et le chargeur de données
-test_dataset = datasets.ImageFolder('/mnt/c/Users/theod/OneDrive/Documents/ULB/Ma0/Q2/INFO-H-410_TechniquesOfArtificialIntelligence/Projet/dogs-vs-cats', data_transforms['val'])
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=4, shuffle=True, num_workers=4)
+# Loas the training dataset
+train_dataset = torchvision.datasets.ImageFolder(data_dir+'/train', transform=transform)
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=2)
 
-# Mettre le modèle en mode d'évaluation
-model.eval()
+# Function to train the network for one epoch
+def train_one_epoch(epoch_index):
+    running_loss = 0.
+    last_loss = 0.
+
+    # Here, we use enumerate(training_loader) instead of
+    # iter(training_loader) so that we can track the batch
+    # index and do some intra-epoch reporting
+    for i, data in enumerate(train_loader, 0):
+        # Every data instance is an input + label pair
+        inputs, labels = data
+        inputs, labels = inputs.to(device), labels.to(device)
+
+        # Zero your gradients for every batch!
+        optimizer.zero_grad()
+
+        # Make predictions for this batch
+        outputs = net(inputs)
+
+        # Compute the loss and its gradients
+        loss = criterion(outputs, labels)
+        loss.backward()
+
+        # Adjust learning weights
+        optimizer.step()
+
+        # Gather data and report
+        running_loss += loss.item()
+        if i % 2000 == 1999:
+            last_loss = running_loss / 1000 # loss per batch
+            print('  batch {} loss: {}'.format(i + 1, last_loss))
+            tb_x = epoch_index * len(train_loader) + i + 1
+            running_loss = 0.
+
+    return last_loss
+
+for epoch in range(10):  # loop over the dataset multiple times
+
+    print('Epoch {}'.format(epoch))
+    train_one_epoch(epoch)
+
+print('Finished Training')
+print('Do the evaluation')
+
+# Load the test dataset
+test_dataset = torchvision.datasets.ImageFolder(data_dir+'/test', transform=transform)
+test_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=2)
+
+net.eval()  # Set the model to evaluation mode
 
 correct = 0
 total = 0
 
-# Pas de calcul de gradient nécessaire pendant l'évaluation
+# Evaluate the model on the test dataset
 with torch.no_grad():
     for images, labels in test_loader:
         images, labels = images.to(device), labels.to(device)
-        outputs = model(images)
+        outputs = net(images)
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
         correct += (predicted == labels).sum().item()

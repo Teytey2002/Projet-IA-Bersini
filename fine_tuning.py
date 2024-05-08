@@ -6,7 +6,7 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 import os
 from datetime import datetime
-from cnn import Net
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # TensorBoard writer to keep tracking of learning curves
@@ -14,11 +14,10 @@ writer = SummaryWriter('run/dogs-vs-cats-logs-tuning')
 
 # Our image transformations for the training set
 transform = transforms.Compose([
-                                transforms.RandomResizedCrop(224,scale=(0.8, 1.0)),
-                                transforms.ToTensor(),
-                                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-                                #transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                                ])
+    transforms.RandomResizedCrop(224,scale=(0.8, 1.0)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+    ])
 # Set the batch size
 batch_size = 10
 
@@ -28,8 +27,6 @@ train_dataset = torchvision.datasets.ImageFolder(data_dir+'/train', transform=tr
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=2)
 val_dataset = torchvision.datasets.ImageFolder(data_dir+'/val', transform=transform)
 val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
-#test_dataset = torchvision.datasets.ImageFolder(data_dir+'/test', transform=transform)
-#test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
 classes = {'dog', 'cat'}
 
 # Check if CUDA is available
@@ -38,22 +35,23 @@ print(device)
 print(torch.cuda.is_available())
 
 # Create the network, loss function and optimizer
-#net = torch.hub.load('NVIDIA/DeepLearningExamples:torchhub', 'nvidia_resnet50', pretrained=True)
 net = models.resnet50(pretrained=True)
 
-#Geler tous les paramètres du modèle
+# Freeze all the parameters of the model
 for param in net.parameters():
     param.requires_grad = False
 
-#Remplacer la dernière couche pour correspondre au nombre de classes dans le nouveau jeu de données
+# Replace the last layer to match the number of classes in the new dataset
 num_ftrs = net.fc.in_features
-net.fc = torch.nn.Linear(num_ftrs, 2)  # 2 classes: chiens et chats
+net.fc = nn.Linear(num_ftrs, 2)  # 2 Class : cats and dogs
 
 
 # Move the model to the device (GPU or CPU)
 net = net.to(device)
+
+# Define function of loss and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(net.fc.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.SGD(net.fc.parameters(), lr=0.001, momentum=0.9)
 
 # Function to train the network for one epoch
 def train_one_epoch(epoch_index, tb_writer):
@@ -128,8 +126,8 @@ for epoch in range(EPOCHS):
     # Log the running loss averaged per batch
     # for both training and validation
     writer.add_scalars('Training vs. Validation Loss',
-                    { 'Training' : avg_loss, 'Validation' : avg_vloss },
-                    epoch_number + 1)
+        { 'Training' : avg_loss, 'Validation' : avg_vloss },
+        epoch_number + 1)
     writer.flush()
 
     # Track best performance, and save the model's state

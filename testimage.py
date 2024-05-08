@@ -1,64 +1,62 @@
 import torch
-import torchvision
 import torchvision.transforms as transforms
-from torchvision.io import read_image
-import matplotlib.pyplot as plt
+import torchvision.models as models #ddd
 from cnn import Net
 import os
 from PIL import Image
 
-# Définir le chemin vers le modèle et les classes
-PATH = './model/model_20240424_094857_21'
+# Define Path to model and classes
+PATH = './model/best_model_fromscratch'
 classes = {0: 'cat', 1: 'dog'}
-class_names = ['cat', 'dog']  # Noms des classes dans l'ordre de l'index
+class_names = ['cat', 'dog']  # Names of classes in order of index
 
-# Définir la transformation
+# Define transformation for from scratch
 transform = transforms.Compose([
-    transforms.Resize(300),  # Redimensionner pour correspondre à l'entrée attendue du modèle
-    transforms.CenterCrop(300),  # Rogner au centre
-    transforms.ToTensor(),  # Convertir en tenseur
+    transforms.Resize(300),  # Resize to match the expected input of the model
+    transforms.CenterCrop(300),  # Crop at the center
+    transforms.ToTensor(),  # Convert to tensor
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
-# Charger le modèle
+# Load the model
 net = Net()
 net.load_state_dict(torch.load(PATH))
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 net.to(device)
-net.eval()  # Mettre le modèle en mode évaluation
+net.eval()  # Set the model to evaluation mode
 
-# Statistiques
+# Statistics
 correct = 0
 total = 0
 
-# Fonction pour tester une image
+# Function to test a single image
 def test_single_image(image_path):
     global correct, total
-    image = Image.open(image_path)  # Charger l'image avec PIL
-    image_tensor = transform(image).unsqueeze(0).to(device)  # Appliquer la transformation et ajouter une dimension batch
+    image = Image.open(image_path)  # Load the image with PIL
+    image_tensor = transform(image).unsqueeze(0).to(device)  # Apply the transformation and add a batch dimension
 
-    with torch.no_grad():  # Pas besoin de calculer les gradients
+    with torch.no_grad():  # No need to compute gradients
         output = net(image_tensor)
-        _, predicted = torch.max(output, 1)  # Obtenir l'index de la classe prédite
+        _, predicted = torch.max(output, 1)  # Get the index of the predicted class
         predicted_class = classes[predicted.item()]
 
-    # Obtenir la classe réelle à partir du nom du dossier
+    # Get the actual class from the folder name
     actual_class = os.path.basename(os.path.dirname(image_path))
 
-    # Incrémenter le total et le nombre de corrects
+    # Increment the total and correct count
     total += 1
     if predicted_class == actual_class:
         correct += 1
 
-# Parcourir tout le dossier de test
-test_dir = '/mnt/c/Users/theod/OneDrive/Documents/ULB/Ma0/Q2/INFO-H-410_TechniquesOfArtificialIntelligence/Projet/dogs-vs-cats/test/test'
+# Iterate over the entire test folder
+test_dir = '/mnt/c/Users/theod/OneDrive/Documents/ULB/Ma0/Q2/INFO-H-410_TechniquesOfArtificialIntelligence/Projet_IA/dogs-vs-cats'
 for root, dirs, files in os.walk(test_dir):
     for file in files:
-        if file.lower().endswith(('.png', '.jpg', '.jpeg')):  # Filtrer pour les images
+        if file.lower().endswith(('.png', '.jpg', '.jpeg')):    # Filter for images
             image_path = os.path.join(root, file)
             test_single_image(image_path)
 
-# Afficher l'exactitude
+# Accuracy
 if total > 0:
     accuracy = 100 * correct / total
     print(f'Accuracy of the network on the test images: {accuracy:.2f} %')

@@ -14,10 +14,10 @@ writer = SummaryWriter('bim/dogs-vs-cats-logs')
 
 # Our image transformations for the training set
 transform = transforms.Compose([
-                                transforms.RandomResizedCrop(300,scale=(0.8, 1.0)),
-                                transforms.ToTensor(),
-                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                                ])
+    transforms.RandomResizedCrop(300,scale=(0.8, 1.0)),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+    ])
 # Set the batch size
 batch_size = 10
 

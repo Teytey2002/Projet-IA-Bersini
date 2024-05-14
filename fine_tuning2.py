@@ -14,7 +14,7 @@ transform = transforms.Compose([
 # Set the batch size
 batch_size = 10
 
-# Load the training datasets
+# Load the training and validation datasets
 data_dir = '/mnt/c/Users/theod/OneDrive/Documents/ULB/Ma0/Q2/INFO-H-410_TechniquesOfArtificialIntelligence/Projet_IA/dogs-vs-cats'
 train_dataset = torchvision.datasets.ImageFolder(data_dir+'/train', transform=transform)
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=2)

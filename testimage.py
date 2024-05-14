@@ -1,6 +1,5 @@
 import torch
 import torchvision.transforms as transforms
-import torchvision.models as models #ddd
 from cnn import Net
 import os
 from PIL import Image

@@ -24,7 +24,7 @@ transform = transforms.Compose([
 classes = ('Cat', 'Dog')
 
 # Liste des chemins d'images à tester
-image_paths = ['testimages/0.jpg','testimages/1.jpg', 'testimages/2.jpg', 'testimages/3.jpg', 'testimages/4.jpg']
+image_paths = ['testimages/0.jpg','testimages/1.jpg', 'testimages/2.jpg', 'testimages/177546.jpg', 'testimages/top.jpg', 'testimages/insta.jpg']
 
 for image_path in image_paths:
     # Charger l'image

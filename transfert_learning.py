@@ -12,6 +12,9 @@ transform = transforms.Compose([
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
+# Check if CUDA is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # Load the resnet50 model pretrained on ImageNet
 net = models.resnet50(pretrained=True)
 
@@ -23,8 +26,7 @@ for param in net.parameters():
 num_ftrs = net.fc.in_features
 net.fc = nn.Linear(num_ftrs, 2)  # 2 classes: dogs and cats
 
-# Check if CUDA is available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Move the model to the device (GPU or CPU)
 net = net.to(device)
 
 # Define the loss function and optimizer

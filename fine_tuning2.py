@@ -27,7 +27,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(device)
 print(torch.cuda.is_available())
 
-# Create the network, loss function and optimizer
+# Create the network
 net = models.resnet50(pretrained=True)
 
 # Replace the last layer to match the number of classes in the new dataset
@@ -41,8 +41,8 @@ net = net.to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.fc.parameters(), lr=0.001, momentum=0.9)
 
-#Scheduler
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)   # Decay LR by a factor of 0.1 every 7 epochs
+#Scheduler for Decay LR by a factor of 0.1 every 7 epochs
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
 
 # Function to train the network for one epoch
